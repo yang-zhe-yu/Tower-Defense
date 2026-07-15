@@ -12,7 +12,7 @@
 using namespace std;
 const short L = 10, C = 40;
 HANDLE H = GetStdHandle(STD_OUTPUT_HANDLE); CONSOLE_CURSOR_INFO info = { 1,0 };
-string a[L]; short T, d = 250, x = 4, g[L] = { 6,6,6,6,6,6,6,6,6,6 };
+string a[L]; short T, x = 4, g[L] = { 6,6,6,6,6,6,6,6,6,6 };
 void pos(int x, int y) { COORD Pos = { x,y }; SetConsoleCursorPosition(H, Pos); }
 void cp(short a, string s) {
     switch (a) {
@@ -27,27 +27,25 @@ void cp(short a, string s) {
     cout << s;
 }
 bool Game() {
-    int s = 0;
     for (short i = 0;i < L;i++)
-        if (g[i] > 1) { s++; if (s >= 3) return true; }
+        if (g[i] > 1) return true;
     return false;
 }
 int main() {
     SetConsoleCursorInfo(H, &info); S("color F0");
     cout << "\n\t\t\t\t\t游戏规则：\n";
-    cout << "\t  保护所有行的生命值（右侧敌人 ），避免70%生命的命值归 0。";
+    cout << "\t  保护所有行的生命值（右侧敌人 ），避免所有的生命值归 0。";
     cout << "\n\t  使用↑和↓控制<在10行之间切换，选中你要操作的行。";
     cout << "\n\t  选中目标行后，按空格攻击，会攻击该行最右侧的敌人";
     cout << "\n\t  敌人开始，降低其强度（颜色变浅），直到敌人消失。";
     cout << "\n\t  当敌人到每行最右边时，会根据敌人强度削减对应行的生命值。";
-    cout << "\n\t  共250发子弹，节约使用。Q键暂停，任意键继续\n\t\t";
     S("pause"); S("mode con cols=87 lines=12"); S("color 0F");
     for (int i = 0;i < L;i++)
         for (int j = 0;j < C;j++) a[i] = a[i] + "0";
     time_t start = time(NULL); srand(start);
     while (Game()) {
         pos(0, 0); time_t t = time(NULL); T++; cp(3, " ");
-        cout << "  第 " << t - start << " 秒   \t子弹:" << d << "发\t\t\t 危险值对应的颜色：";
+        cout << "  第 " << t - start << " 秒\t\t\t\t\t 危险值对应的颜色：";
         for (short i = 6;i;i--) cp(i, " "), cout << i << ' ';
         if (T == 20) {
             T = 0; short BX = rand() % L;
@@ -70,11 +68,7 @@ int main() {
             char k = _getch();
             if (k == 72 && x > 0) x--;
             if (k == 80 && x < L - 1) x++;
-            if (k == 'Q' || k == 'q') {
-                S("cls"); S("pause");
-            }
-            if (k == ' ' && d > 0) {
-                d--; for (int i = C * 2 - 2;i >= 0;i--) pos(i, x + 1), cp(6, "--");
+            if (k == ' ') {
                 for (short i = C - 1;i >= 0;i--)
                     if (a[x][i] > '0') { a[x][i]--; break; }
             }

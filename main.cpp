@@ -99,7 +99,7 @@ int main() {
     case '2': T = 50; break;
     case '3': T = 80; break;
     }
-    system("mode con cols=55 lines=10");
+    system("mode con cols=55 lines=11");
     while (Game()) {
         Sleep(100);
         system("cls");

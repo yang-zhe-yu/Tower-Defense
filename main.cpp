@@ -1,79 +1,110 @@
 #include <iostream>
-#include <windows.h>
+#include <Windows.h>
 #include <string>
 #include <conio.h>
 #include <algorithm>
+#include <cstdlib>
 #include <time.h>
-#define S(c) system(c);
-#define Set(c) SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),FOREGROUND_INTENSITY|(c))
+#define Set(c) SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (c))
 #define R FOREGROUND_RED 
 #define B FOREGROUND_BLUE 
 #define G FOREGROUND_GREEN
+#define I FOREGROUND_INTENSITY 
 using namespace std;
-const short L = 10, C = 40;
-HANDLE H = GetStdHandle(STD_OUTPUT_HANDLE); CONSOLE_CURSOR_INFO info = { 1,0 };
-string a[L]; short T, x = 4, g[L] = { 6,6,6,6,6,6,6,6,6,6 };
-void pos(int x, int y) { COORD Pos = { x,y }; SetConsoleCursorPosition(H, Pos); }
-void cp(short a, string s) {
+const int ROWS = 10, COLS = 20;
+int T; char get;
+void cp(int a, string s) {
     switch (a) {
-    case 0: Set(R | B | G); break; 
-    case 1: Set(R | B); break;
-    case 2: Set(B); break;
-    case 3: Set(B | G); break;
-    case 4: Set(G); break;
-    case 5: Set(R | G); break;
-    case 6: Set(R); break;
+    case 0: Set(I); break;
+    case 1: Set(I | R); break;
+    case 2: Set(I | B); break;
+    case 3: Set(I | G); break;
+    case 4: Set(I | R | B); break;
+    case 5: Set(I | R | G); break;
+    case 6: Set(I | B | G); break;
+    case 7: Set(I | R | B | G); break;
     }
     cout << s;
 }
 bool Game() {
-    for (short i = 0;i < L;i++)
-        if (g[i] > 1) return true;
+    static int x = 0;
+    static string a[ROWS];
+    static int g[ROWS];
+    static bool boss = false;
+    if (!boss) {
+        srand(time(0));
+        for (int i = 0;i < ROWS;i++) {
+            a[i] = string(COLS, '0');
+            g[i] = 10;
+        }
+        boss = true;
+    }
+    if (rand() % 100 < T) {
+        int Bo = rand() % ROWS;
+        if (a[Bo][0] < '7') a[Bo][0]++;
+    }
+    for (int i = 0;i < ROWS;i++) {
+        if (i == x) cp(5, ">");
+        else cp(0, " ");
+        for (int j = 0;j < COLS;j++)
+            if (a[i][j] > '0') cp(a[i][j] - '0', "■");
+            else cp(0, "  ");
+        cp(3, "| ");
+        for (int k = 0;k < g[i];k++) cp(3, "█");
+        cout << endl;
+    }
+    if (_kbhit()) {
+        int key = _getch();
+        if (key == 0xE0) {
+            key = _getch();
+            switch (key) {
+            case 0x48:if (x > 0)x--; break;
+            case 0x50:if (x < ROWS - 1)x++; break;
+            }
+        }
+        else if (key == ' ') {
+            for (int i = COLS - 1;i >= 0;i--)
+                if (a[x][i] > '0') {
+                    a[x][i]--;
+                    break;
+                }
+        }
+    }
+    for (int i = 0;i < ROWS;i++) {
+        if (a[i][COLS - 1] > '0') g[i] = max(0, g[i] - (a[i][COLS - 1] - '0'));
+        a[i] = "0" + a[i].substr(0, COLS - 1);
+    }
+    int life = 0;
+    for (int i = 0;i < ROWS;i++)
+        if (g[i] > 0) return true;
     return false;
 }
 int main() {
-    SetConsoleCursorInfo(H, &info); S("color F0");
+    CONSOLE_CURSOR_INFO dw;
+    dw.dwSize = 30;
+    dw.bVisible = FALSE;
+    SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &dw);
+    system("color F0");
     cout << "\n\t\t\t\t\t游戏规则：\n";
-    cout << "\t  保护所有行的生命值（右侧敌人 ），避免所有的生命值归 0。";
-    cout << "\n\t  使用↑和↓控制<在10行之间切换，选中你要操作的行。";
-    cout << "\n\t  选中目标行后，按空格攻击，会攻击该行最右侧的敌人";
-    cout << "\n\t  敌人开始，降低其强度（颜色变浅），直到敌人消失。";
-    cout << "\n\t  当敌人到每行最右边时，会根据敌人强度削减对应行的生命值。";
-    S("pause"); S("mode con cols=87 lines=12"); S("color 0F");
-    for (int i = 0;i < L;i++)
-        for (int j = 0;j < C;j++) a[i] = a[i] + "0";
-    time_t start = time(NULL); srand(start);
-    while (Game()) {
-        pos(0, 0); time_t t = time(NULL); T++; cp(3, " ");
-        cout << "  第 " << t - start << " 秒\t\t\t\t\t 危险值对应的颜色：";
-        for (short i = 6;i;i--) cp(i, " "), cout << i << ' ';
-        if (T == 20) {
-            T = 0; short BX = rand() % L;
-            if (g[BX]) a[BX][0] += rand() % 6 + 1;
-        }
-        for (short i = 0;i < L;i++) {
-            cout << endl;
-            for (short j = 0;j < C;j++)
-                if (a[i][j] > '0') cp(a[i][j] - '0', "●");
-                else cp(0, "  ");
-            if (i == x) cp(0, "<"); else cp(0, " ");
-            if (g[i] > 0) { cp(7 - g[i], "| ("); cout << g[i] << ')'; }
-            else cp(6, "| ( )");
-        }
-        for (short i = 0;i < L;i++) {
-            if (a[i][C - 1] > '0') g[i] -= (a[i][C - 1] - '0');
-            a[i] = "0" + a[i].erase(C - 1, 1);
-        }
-        if (_kbhit()) {
-            char k = _getch();
-            if (k == 72 && x > 0) x--;
-            if (k == 80 && x < L - 1) x++;
-            if (k == ' ') {
-                for (short i = C - 1;i >= 0;i--)
-                    if (a[x][i] > '0') { a[x][i]--; break; }
-            }
-        }
+    cout << "  保护所有行的「生命值」（右侧绿色方块 █），避免所有行的生命值归 0。";
+    cout << "\n  移动光标：使用「上方向键 ↑」和「下方向键 ↓」，控制左侧的 > 符号在 10 行之间切换，选中你要操作的行。";
+    cout << "\n  攻击方块：选中目标行后，按「空格键」攻击 —— 会从该行最右侧的非 0 ";
+    cout << "\n  方块开始，降低其强度（数字减小，颜色变浅），直到方块消失（变回 0，显示空白）。";
+    cout << "\n  当方块移动到最右侧（每行最右边的位置）时，会根据方块数字（1~6）削减对应行的生命值（数字多大，就减多少生命值）。";
+    cout << "\n  生命值以绿色方块 █ 显示，初始每行为 10 个，减后不会恢复。";
+    cout << "\n\t\t\t1，简单\t2，中等\t3，炼狱\n";
+    get = _getch();
+    switch (get) {
+    case '1': T = 20; break;
+    case '2': T = 50; break;
+    case '3': T = 80; break;
     }
-    S("cls"); Set(R);
-    cout << "\n\n\n\t\t游戏结束\n\t  成绩：" << (time(NULL) - start) * 1.0 << "秒";
+    system("mode con cols=55 lines=10");
+    while (Game()) {
+        Sleep(100);
+        system("cls");
+    }
+    system("cls");
+    Set(I | R);
+    cout << "\n\n\n\t\t游戏结束";
 }
